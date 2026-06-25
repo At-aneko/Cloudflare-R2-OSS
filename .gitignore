@@ -4,3 +4,8 @@ dist/
 *.log
 .DS_Store
 .trae/
+
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
