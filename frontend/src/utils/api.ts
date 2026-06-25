@@ -21,17 +21,9 @@ export async function fetchFiles(prefix: string): Promise<ListFilesResponse> {
 }
 
 export async function downloadFile(key: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/files/download?key=${encodeURIComponent(key)}`);
-  if (!res.ok) throw new Error('Download failed');
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = key.split('/').pop() || key;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  // 直接打开下载链接，避免大文件 blob 中转导致 ERR_CONNECTION_CLOSED
+  const downloadUrl = `${API_BASE}/files/download?key=${encodeURIComponent(key)}`;
+  window.open(downloadUrl, '_blank');
 }
 
 export async function uploadFiles(

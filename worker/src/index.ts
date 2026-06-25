@@ -76,6 +76,7 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
       const headers = new Headers();
       headers.set('Content-Type', object.httpMetadata?.contentType || 'application/octet-stream');
       headers.set('Content-Disposition', `attachment; filename="${encodeURIComponent(key.split('/').pop() || key)}"`);
+      headers.set('Access-Control-Allow-Origin', '*');
       if (object.etag) headers.set('ETag', object.etag);
       return new Response(object.body, { headers });
     } catch (e) {
