@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { useAppStore } from '../store/appStore';
 
 declare global {
@@ -25,6 +25,19 @@ export function useTurnstile() {
   const setShowTurnstile = useAppStore((s) => s.setShowTurnstile);
   const setTurnstileToken = useAppStore((s) => s.setTurnstileToken);
   const widgetIdRef = useRef<string>('');
+  const mountedRef = useRef(true);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = undefined;
+      }
+    };
+  }, []);
 
   const loadTurnstileScript = useCallback(() => {
     if (document.querySelector('script[src*="turnstile"]')) return;
@@ -36,14 +49,17 @@ export function useTurnstile() {
   }, []);
 
   const renderTurnstile = useCallback((containerId: string, onSuccess: (token: string) => void) => {
+    if (!mountedRef.current) return;
+
     if (!window.turnstile) {
-      setTimeout(() => renderTurnstile(containerId, onSuccess), 200);
+      retryTimerRef.current = setTimeout(() => renderTurnstile(containerId, onSuccess), 200);
       return;
     }
 
     // 移除旧 widget 避免重复渲染
     if (widgetIdRef.current) {
       window.turnstile.remove(widgetIdRef.current);
+      widgetIdRef.current = '';
     }
 
     const container = document.getElementById(containerId);
@@ -67,6 +83,10 @@ export function useTurnstile() {
   }, [setTurnstileToken, setShowTurnstile]);
 
   const removeTurnstile = useCallback(() => {
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = undefined;
+    }
     if (widgetIdRef.current && window.turnstile) {
       window.turnstile.remove(widgetIdRef.current);
       widgetIdRef.current = '';
